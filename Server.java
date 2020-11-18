@@ -1,6 +1,7 @@
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+
 import java.util.*;
 
 public class Server extends Thread {
@@ -15,7 +16,7 @@ public class Server extends Thread {
 	}
 
 	private DatagramSocket socket;
-	private boolean running = false;
+	private boolean running;
 	private ArrayList<Session> sessions;
 	private byte[] buffer;
 
@@ -25,7 +26,7 @@ public class Server extends Thread {
 
 	public Server() {
 		try {
-			sessions = new ArrayList;
+			sessions = new ArrayList<>();
 			buffer = new byte[256];
 			socket = new DatagramSocket(8080);
 			System.out.println("Server now listening on port 8080");
@@ -54,30 +55,40 @@ public class Server extends Thread {
 		loop: while(running) {
 			try {
 				clearBuffer();
+
+				// Get any incoming packet. Dicern address and port.
 				DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
 				socket.receive(packet);
-
 				InetAddress address = packet.getAddress();
 				int port = packet.getPort();
-
 				log(address + ":" + port + "; " + new String(packet.getData()));
 
-				packet = new DatagramPacket(buffer, buffer.length, address, port);
-				String sent = new String(packet.getData(), 0, packet.getLength());
-
-				switch(sent) {
-					case "connect": connectSession(address, port); break;
-					case "disconnect": disconnectSession(address, port); break;
-				}
-
-				socket.send(packet);
-
+				// Send out a packet to an adress and port!
+				for(Session s : sessions)
+					send("Message was sent from " + address, s.address, s.port);
+				
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		}
 
 		socket.close();
+	}
+
+	private void send(String message, InetAddress address, int port) {
+		DatagramPacket packet = new DatagramPacket(buffer, buffer.length, address, port);
+		String sent = new String(packet.getData(), 0, packet.getLength());
+
+		switch(sent) {
+			case "connect": connectSession(address, port); break;
+			case "disconnect": disconnectSession(address, port); break;
+		}
+
+		try {
+			socket.send(packet);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 	private void log(String message) {

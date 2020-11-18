@@ -2,50 +2,54 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 
+import java.util.*;
+
 public class Client extends Thread {
-	private boolean running = false;
+
+	private boolean running;
     private DatagramSocket socket; // Client socket.
     private InetAddress address;
     private byte[] buf;
 
+    Scanner scanner;
+
     public static void main(String[] args) {
-    	new Client().start();
+    	new Client();
     }
 
     public Client() {
         try {
             socket = new DatagramSocket();
             address = InetAddress.getByName("localhost");
+            scanner = new Scanner(System.in);
+            System.out.println("Client loaded!");
             send("connect");
         } catch (Exception e) {
             e.printStackTrace();
         }
+        start();
     }
 
     public void run() {
     	running = true;
     	
     	while(running) {
-    		// must be able to recieve information
-    		// must be able to send information
+            String message = "";
+            while((message = scanner.nextLine()) != "")
+                send(message);
     	}
 
     	socket.close();
     }
 
-    public String send(String msg) {
+    public void send(String msg) {
         try {
             buf = msg.getBytes();
             DatagramPacket packet = new DatagramPacket(buf, buf.length, address, 8080);
             socket.send(packet); // Send message
-
-            packet = new DatagramPacket(buf, buf.length); // Init a packet for a response
-            socket.receive(packet);  // Response
-            return new String(packet.getData(), 0, packet.getLength()); // Return response
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return "Internal Client Error!";
     }
 
     public void close() {
